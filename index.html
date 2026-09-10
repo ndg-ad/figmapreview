@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Figma Prototype Preview</title>
+<style>
+:root{--bg:#fff;--text:#111827;--muted:#6b7280;--accent:#006EC7;--line:#dfe5ea}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);font-family:Inter,Arial,sans-serif;color:var(--text)}
+body{padding:10px}
+.app{width:100%;height:100%;display:flex;flex-direction:column;gap:10px;min-height:0}
+.toolbar{flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px}
+input{width:100%;min-width:0;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;outline:none}
+input:focus{border-color:var(--accent)}
+button{appearance:none;border:1px solid var(--accent);border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.primary{background:var(--accent);color:#fff}
+.secondary{background:#fff;color:var(--accent)}
+.frame-wrap{flex:1 1 auto;min-height:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#f6f8fa;position:relative}
+iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+.empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:30px;color:var(--muted);font-size:13px;line-height:1.5}
+.empty strong{display:block;color:var(--text);margin-bottom:4px}
+.hidden{display:none}
+@media(max-width:700px){body{padding:6px}.app{gap:6px}.toolbar{grid-template-columns:1fr auto}.secondary{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <input id="urlInput" type="url" placeholder="Paste Figma prototype/share URL">
+    <button id="loadBtn" class="primary">Load prototype</button>
+    <button id="clearBtn" class="secondary">Clear</button>
+  </div>
+
+  <div class="frame-wrap">
+    <div id="emptyState" class="empty">
+      <div>
+        <strong>Figma Prototype Preview</strong>
+        Paste a Figma prototype/share link above and load it inside the slide.
+      </div>
+    </div>
+    <iframe id="preview" class="hidden" allowfullscreen
+      referrerpolicy="strict-origin-when-cross-origin"
+      allow="clipboard-read; clipboard-write; fullscreen"></iframe>
+  </div>
+</div>
+
+<script>
+const input = document.getElementById('urlInput');
+const loadBtn = document.getElementById('loadBtn');
+const clearBtn = document.getElementById('clearBtn');
+const frame = document.getElementById('preview');
+const emptyState = document.getElementById('emptyState');
+
+function normalizeFigmaUrl(raw) {
+  const value = (raw || '').trim();
+  if (!value) return null;
+  let url;
+  try { url = new URL(value); } catch { return null; }
+  const host = url.hostname.toLowerCase();
+  if (host === 'www.figma.com' && url.pathname === '/embed') return value;
+  if (host === 'figma.com' || host === 'www.figma.com') {
+    return 'https://www.figma.com/embed?embed_host=share&url=' + encodeURIComponent(value);
+  }
+  return null;
+}
+
+function loadPrototype() {
+  const embedUrl = normalizeFigmaUrl(input.value);
+  if (!embedUrl) {
+    alert('Please paste a valid figma.com URL.');
+    return;
+  }
+  localStorage.setItem('figmaPreviewUrl', input.value.trim());
+  frame.src = embedUrl;
+  frame.classList.remove('hidden');
+  emptyState.classList.add('hidden');
+}
+
+function clearPrototype() {
+  localStorage.removeItem('figmaPreviewUrl');
+  input.value = '';
+  frame.src = 'about:blank';
+  frame.classList.add('hidden');
+  emptyState.classList.remove('hidden');
+}
+
+loadBtn.addEventListener('click', loadPrototype);
+clearBtn.addEventListener('click', clearPrototype);
+input.addEventListener('keydown', e => { if (e.key === 'Enter') loadPrototype(); });
+
+const saved = localStorage.getItem('figmaPreviewUrl');
+if (saved) {
+  input.value = saved;
+  loadPrototype();
+}
+</script>
+</body>
+</html>
